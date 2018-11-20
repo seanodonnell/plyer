@@ -10,7 +10,11 @@ from plyer.facades import GPS
 class DBusGPS(GPS):
 
     def _configure(self):
-        pass
+        import dbus
+        bus = dbus.SessionBus()
+        self.geoclue = bus.get_object(
+            'org.freedesktop.Geoclue.Providers.UbuntuGeoIP',
+            '/org/freedesktop/Geoclue/Providers/UbuntuGeoIP')
 
     def _start(self, **kwargs):
         # update location once a minute, given its resolved by
@@ -20,7 +24,11 @@ class DBusGPS(GPS):
     def _get_location(self, dt):
         # note to self, just get this to return the same location to start
         # with every 60 seconds, then worry about dbus after
-        self.on_location(lat=1, lon=1)
+
+        position_info = self.geoclue.GetPosition(
+            dbus_interface='org.freedesktop.Geoclue.Position')
+
+        self.on_location(lat=position_info[2], lon=position_info[3])
 
     def _stop(self):
         Clock.unschedule(self.location_event)
